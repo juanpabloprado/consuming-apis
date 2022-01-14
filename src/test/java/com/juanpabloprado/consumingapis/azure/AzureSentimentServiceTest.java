@@ -13,22 +13,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest
 class AzureSentimentServiceTest {
 
-	@Autowired
-	private AzureSentimentService sentimentService;
-	
-	@Test
-	void testPositiveSentiment() throws IOException, InterruptedException {
-		
-		SentimentAnalysis analysis = this.sentimentService.requestSentimentAnalysis("I love wild animals and their habitat!", ENGLISH.getLanguage());
-		assertNotNull(analysis);
-		assertEquals("positive", analysis.sentiment());
-	}
+    @Autowired
+    private AzureSentimentService sentimentService;
 
-	@Test
-	void testNegativeSentiment() throws IOException, InterruptedException {
-		
-		SentimentAnalysis analysis = this.sentimentService.requestSentimentAnalysis("Pollution is horrible, we need to stop it!", ENGLISH.getLanguage());
-		assertNotNull(analysis);
-		assertEquals("negative", analysis.sentiment());
-	}
+    @Test
+    void testPositiveSentiment() throws IOException, InterruptedException {
+
+        SentimentAnalysis analysis = sentimentService.requestSentimentAnalysis("I love wild animals and their habitat!", ENGLISH.getLanguage());
+        assertNotNull(analysis);
+        assertEquals("positive", analysis.sentiment());
+    }
+
+    @Test
+    void testNegativeSentiment() throws IOException, InterruptedException {
+
+        SentimentAnalysis analysis = sentimentService.requestSentimentAnalysis("Pollution is horrible, we need to stop it!", ENGLISH.getLanguage());
+        assertNotNull(analysis);
+        assertEquals("negative", analysis.sentiment());
+    }
 }
