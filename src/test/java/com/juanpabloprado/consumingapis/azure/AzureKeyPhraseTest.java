@@ -1,6 +1,9 @@
 package com.juanpabloprado.consumingapis.azure;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,44 +35,53 @@ class AzureKeyPhraseTest {
 
     private static final String API_KEY_HEADER_NAME = "Ocp-Apim-Subscription-Key";
 
-    private static final String EXAMPLE_JSON = """
-            {
-              "documents": [
-                {
-                  "language": "en",
-                  "id": "1",
-                  "text": "In an e360 interview, Carlos Nobre, Brazil’s leading expert on the Amazon and climate change, discusses the key perils facing the world’s largest rainforest, where a record number of fires are now raging, and lays out what can be done to stave off a ruinous transformation of the region."
-                }
-              ]
-            }
-            """;
-
     private static final String textForAnalysis = "In an e360 interview, Carlos Nobre, Brazil’s leading expert on the Amazon and climate change, discusses the key perils facing the world’s largest rainforest, where a record number of fires are now raging, and lays out what can be done to stave off a ruinous transformation of the region.";
+
+    private final HttpClient client = HttpClient.newHttpClient();
+    private HttpRequest request;
 
     @Autowired
     public ObjectMapper mapper;
 
-    @Test
-    public void getKeyPhrases() throws IOException, InterruptedException {
-
+    @BeforeEach
+    public void setup() throws JsonProcessingException {
         TextDocument document = new TextDocument("1", textForAnalysis, ENGLISH.getLanguage());
         TextAnalyticsRequest requestBody = new TextAnalyticsRequest(new ArrayList<>());
         requestBody.documents().add(document);
 
-        HttpClient client = HttpClient.newHttpClient();
-
-        HttpRequest request = HttpRequest.newBuilder()
+        request = HttpRequest.newBuilder()
                 .uri(URI.create(AZURE_ENDPOINT + AZURE_ENDPOINT_PATH))
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .header(API_KEY_HEADER_NAME, this.azureApiKey)
                 .POST(BodyPublishers.ofString(mapper.writeValueAsString(requestBody)))
                 .build();
+    }
 
+    @Test
+    public void getKeyPhrases() throws IOException, InterruptedException {
         HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
-
         assertEquals(200, response.statusCode());
         System.out.println(response.body());
+    }
 
+    @Test
+    public void asyncCall() throws InterruptedException {
+        client.sendAsync(request, BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(body -> {
+                    JsonNode node;
+                    try {
+                        node = mapper.readValue(body, JsonNode.class);
+                        String value = node.get("documents").get(0).get("keyPhrases").get(0).asText();
+
+                        System.out.println("The first key phrase is " + value);
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        System.out.println("This will be called first because our call is async.");
+        Thread.sleep(5000);
     }
 
 
